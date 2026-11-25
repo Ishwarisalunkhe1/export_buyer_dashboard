@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#174C59">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  {% macro nav_item(endpoint, label, active) -%}
+    <a class="nav-link{% if active %} active{% endif %}" href="{{ url_for(endpoint) }}"{% if active %} aria-current="page"{% endif %}>{{ label }}</a>
+  {%- endmacro %}
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <div class="sidebar-brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <div class="brand-title">SEASHELL</div>
+          <div class="brand-subtitle">Global Trade Intelligence</div>
+        </div>
+      </div>
+
+      <div class="sidebar-label">Workspace</div>
+      <nav class="nav">
+        {{ nav_item('dashboard', 'Overview', request.path == '/') }}
+        {{ nav_item('discovery', 'Buyer discovery', request.path.startswith('/discovery')) }}
+        {{ nav_item('leads', 'Leads', request.path.startswith('/lead')) }}
+        {{ nav_item('outreach', 'Email outreach', request.path.startswith('/outreach')) }}
+        {{ nav_item('history', 'Email history', request.path == '/history') }}
+        {{ nav_item('reports', 'Reports', request.path.startswith('/reports')) }}
+        {{ nav_item('playbooks', 'Research playbooks', request.path.startswith('/playbooks')) }}
+        {{ nav_item('integrations', 'Connection status', request.path == '/integrations') }}
+      </nav>
+
+      <div class="sidebar-note">
+        <strong>Demo workspace</strong>
+        Sample buyers and simulated outreach are clearly labelled.
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <input class="nav-toggle" type="checkbox" id="nav-toggle" aria-label="Toggle navigation">
+      <div class="mobile-bar">
+        <div class="mobile-brand">
+          <div class="brand-mark" aria-hidden="true"></div>
+          <div>
+            <div class="brand-title">SEASHELL</div>
+            <div class="brand-subtitle">Global Trade Intelligence</div>
+          </div>
+        </div>
+        <label class="menu-button" for="nav-toggle">
+          <span></span><span></span><span></span>
+          <span class="sr-only">Open navigation</span>
+        </label>
+      </div>
+
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        {{ nav_item('dashboard', 'Overview', request.path == '/') }}
+        {{ nav_item('discovery', 'Buyer discovery', request.path.startswith('/discovery')) }}
+        {{ nav_item('leads', 'Leads', request.path.startswith('/lead')) }}
+        {{ nav_item('outreach', 'Email outreach', request.path.startswith('/outreach')) }}
+        {{ nav_item('history', 'Email history', request.path == '/history') }}
+        {{ nav_item('reports', 'Reports', request.path.startswith('/reports')) }}
+        {{ nav_item('playbooks', 'Research playbooks', request.path.startswith('/playbooks')) }}
+        {{ nav_item('integrations', 'Connection status', request.path == '/integrations') }}
+      </nav>
+
+      <div class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-stack" role="status" aria-live="polite">
+              {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <main>
+          {% block content %}{% endblock %}
+        </main>
+
+        <footer class="site-footer small muted">
+          <span>SEASHELL · Global Trade Intelligence</span>
+          <span>Sample buyers and simulated outreach are labelled Demo.</span>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.mobile-nav a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        var toggle = document.getElementById('nav-toggle');
+        if (toggle) { toggle.checked = false; }
+      });
+    });
+  </script>
+</body>
+</html>

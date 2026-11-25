@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Email outreach · {{ app_name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Buyer communication</span>
+    <h1>Personalized email outreach</h1>
+    <p class="muted">Prepare a tailored introduction with a product presentation, then review every attempt in email history.</p>
+  </div>
+  <a class="btn secondary" href="{{ url_for('history') }}">View email history</a>
+</div>
+
+{% if not gmail_state.connected %}
+<div class="notice demo">
+  <strong>Demo outbox:</strong> Gmail is not connected. Clicking send records a simulated email in the history table; no message leaves this machine.
+</div>
+{% else %}
+<div class="notice">
+  <strong>Gmail API connected.</strong> Sender: {{ gmail_state.sender }}. Use with care and keep outreach limited to relevant business buyers.
+</div>
+{% endif %}
+
+<div class="split">
+  <section class="card">
+    <span class="eyebrow">Step 04</span>
+    <h2>Compose message</h2>
+    <form class="stack" method="post" action="{{ url_for('outreach_send') }}">
+      {% for lead in selected %}<input type="hidden" name="lead_ids" value="{{ lead.id }}">{% endfor %}
+
+      <div class="grid cols-2">
+        <div><label for="sender_name">Sender name</label><input id="sender_name" name="sender_name" placeholder="Your name"></div>
+        <div><label for="company_name">Your company</label><input id="company_name" name="company_name" placeholder="Export company name"></div>
+        <div><label for="product">Product</label><input id="product" name="product" value="singing bowls"></div>
+        <div><label for="country">Target country</label><input id="country" name="country" value="United States"></div>
+      </div>
+
+      <div><label for="subject">Subject</label><input id="subject" name="subject" value="{{ subject_template }}"></div>
+      <div><label for="body">Message</label><textarea id="body" name="body">{{ body_template }}</textarea></div>
+
+      <div class="grid cols-2">
+        <div>
+          <label for="attachment">Product presentation PDF</label>
+          <select id="attachment" name="attachment">
+            <option value="">No attachment</option>
+            {% for item in attachments %}
+              <option value="{{ item.name }}" {% if item.is_demo %}selected{% endif %}>{{ item.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="max_emails">Maximum emails in this run</label>
+          <input id="max_emails" name="max_emails" type="number" min="1" max="100" value="{{ max_emails_per_run }}">
+        </div>
+      </div>
+
+      <div class="checkbox">
+        <input type="checkbox" id="business_only" name="business_only" value="1" checked>
+        <label for="business_only">Send only to classified business buyers</label>
+      </div>
+
+      <div>
+        <button class="btn" type="submit" {% if not selected %}disabled{% endif %}>Send / simulate {{ selected | length }} email(s)</button>
+        {% if not selected %}<p class="small muted">Prepare outreach from the Leads page after validating and classifying buyers.</p>{% endif %}
+      </div>
+    </form>
+
+    <p class="small muted">
+      Messages adapt automatically to each buyer's name, company, product and location. A spam guard limits contact to {{ max_emails_per_lead_per_day }} email per buyer per day, with an overall run limit.
+    </p>
+  </section>
+
+  <div>
+    <section class="card">
+      <h2>Selected buyers <span class="badge gray">{{ selected | length }}</span></h2>
+      {% for lead in selected %}
+        <div class="card tight">
+          <strong>{{ lead.contact_name or lead.company_name }}</strong>
+          <div class="small muted">{{ lead.company_name }}</div>
+          <div class="small">{{ lead.email }}</div>
+          <div>
+            {% if lead.email_valid %}<span class="badge green">Valid format</span>{% else %}<span class="badge red">Invalid</span>{% endif %}
+            {% if lead.buyer_type == 'business' %}<span class="badge purple">Business buyer</span>
+            {% elif lead.buyer_type == 'individual' %}<span class="badge orange">Individual buyer</span>
+            {% elif lead.buyer_type == 'uncertain' %}<span class="badge orange">Uncertain</span>
+            {% else %}<span class="badge gray">Not classified</span>{% endif %}
+          </div>
+        </div>
+      {% else %}
+        <p class="muted">No buyers selected.</p>
+      {% endfor %}
+    </section>
+
+    <section class="card">
+      <h2>Attachments</h2>
+      {% for item in attachments %}
+        <p class="small"><a href="{{ url_for('uploaded_file', filename=item.name) if not item.is_demo else url_for('download_sample_pdf') }}" target="_blank">{{ item.name }}</a> {% if item.is_demo %}<span class="badge orange">Demo</span>{% endif %}</p>
+      {% else %}<p class="muted">No PDF available.</p>{% endfor %}
+      <p class="small muted">Choose a PDF presentation from the available attachments before sending.</p>
+    </section>
+
+    <section class="card">
+      <h2>Recent history</h2>
+      {% for item in recent_history %}
+        <p class="small"><strong>{{ item.lead_name }}</strong><br>{{ item.status }} · {{ item.sent_at }}</p>
+      {% else %}<p class="muted">No outreach recorded yet.</p>{% endfor %}
+    </section>
+  </div>
+</div>
+
+{% endblock %}

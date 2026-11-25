@@ -1,0 +1,22 @@
+# Secrets and local auth artefacts
+.env
+*.env
+credentials/
+
+# Python runtime artefacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Local runtime state and uploaded test files
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+*.log

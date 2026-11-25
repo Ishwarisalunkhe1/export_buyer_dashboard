@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Connection status · {{ app_name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Workspace status</span>
+    <h1>Connection status</h1>
+    <p class="muted">A clear view of what is active in this workspace. Credentials and technical settings are never shown here.</p>
+  </div>
+  <a class="btn secondary" href="{{ url_for('dashboard') }}">Back to overview</a>
+</div>
+
+{% if not gmail.connected %}
+<div class="notice demo">
+  <strong>Outreach is simulated.</strong> Gmail is not connected, so sending records a demo entry in email history. No message leaves this machine.
+</div>
+{% else %}
+<div class="notice">
+  <strong>Gmail is connected.</strong> Outreach can send real messages from the configured sender. Use it only for relevant business buyers.
+</div>
+{% endif %}
+
+<div class="grid cols-2">
+  <section class="card">
+    <h2>Gemini classification</h2>
+    <p>
+      {% if gemini_configured %}<span class="badge green">Active</span>
+      {% else %}<span class="badge orange">Demo rules</span>{% endif %}
+    </p>
+    <p class="small muted">
+      {% if gemini_configured %}Buyer labels include a reason, confidence and source so AI results are easy to recognise.{% else %}Buyer labels use clearly marked demo rules. Each lead shows its source; no demo result is presented as an AI result.{% endif %}
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>Email outreach</h2>
+    <p>
+      {% if gmail.connected %}<span class="badge green">Connected</span>
+      {% else %}<span class="badge orange">Demo outbox</span>{% endif %}
+    </p>
+    <p class="small muted">
+      {% if gmail.connected %}Messages are delivered through the connected sender and recorded in history.{% else %}Sending is simulated and recorded in history. Connect Gmail to deliver real messages.{% endif %}
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>Email validation</h2>
+    <p>
+      {% if validation_mode == 'mx' %}<span class="badge green">Enhanced check</span>
+      {% else %}<span class="badge">Standard format check</span>{% endif %}
+    </p>
+    <p class="small muted">Addresses are checked before outreach so invalid contacts are kept out of campaigns.</p>
+  </section>
+
+  <section class="card">
+    <h2>Lead sources</h2>
+    <p><span class="badge green">Guided links + sample records</span></p>
+    <p class="small muted">Research shortcuts open public platforms for manual review. Sample prospects are fictional and labelled Demo.</p>
+  </section>
+</div>
+
+<section class="card">
+  <h2>How to read this workspace</h2>
+  <div class="grid cols-3">
+    <div class="workflow-step">
+      <span class="badge">1</span>
+      <h3>Save the buyer</h3>
+      <p class="small muted">Contact details are stored with their source and checked for duplicates.</p>
+    </div>
+    <div class="workflow-step">
+      <span class="badge">2</span>
+      <h3>Check the lead</h3>
+      <p class="small muted">Email validity and buyer classification are shown on every record.</p>
+    </div>
+    <div class="workflow-step">
+      <span class="badge">3</span>
+      <h3>Review outreach</h3>
+      <p class="small muted">History shows whether a message was sent or simulated.</p>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

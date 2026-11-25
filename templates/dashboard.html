@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Overview · {{ app_name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Global trade workspace</span>
+    <h1>Buyer intelligence overview</h1>
+    <p class="muted">Move from market research to a clean, classified buyer list and prepared outreach — all in one workspace.</p>
+  </div>
+  <a class="btn" href="{{ url_for('discovery', **filters) }}">Find buyers</a>
+</div>
+
+<div class="notice demo">
+  <strong>Current workspace mode:</strong>
+  {% if gemini_configured %}Buyer classification is active.{% else %}Buyer classification uses clearly labelled demo rules.{% endif %}
+  {% if not gmail_state.connected %} Outreach is simulated until Gmail is connected; no real email is sent.{% endif %}
+</div>
+
+<div class="grid cols-4">
+  <div class="card stat-card"><div class="stat-value">{{ stats.total_leads }}</div><div class="stat-label">Leads saved</div></div>
+  <div class="card stat-card"><div class="stat-value">{{ stats.valid_emails }}</div><div class="stat-label">Valid-format emails</div></div>
+  <div class="card stat-card"><div class="stat-value">{{ stats.business_buyers }}</div><div class="stat-label">Business buyers</div></div>
+  <div class="card stat-card"><div class="stat-value">{{ stats.emails_logged }}</div><div class="stat-label">Emails recorded</div></div>
+</div>
+
+<p class="small muted summary-line">
+  Classification summary: {{ stats.business_buyers }} business buyer(s) ·
+  {{ stats.individual_buyers }} individual buyer(s) ·
+  {{ stats.uncertain_buyers }} uncertain ·
+  {{ stats.unclassified }} not classified.
+  Sources: {{ stats.gemini_classified }} AI result(s), {{ stats.demo_classified }} demo-rule result(s).
+</p>
+
+<div class="grid cols-2">
+  <section class="card">
+    <span class="eyebrow">Step 01</span>
+    <h2>Start a buyer search</h2>
+    <p class="muted small">Choose a product and narrow the market from country to city.</p>
+    <form class="inline" method="get" action="{{ url_for('discovery') }}">
+      <div class="field"><label for="product">Product</label><input id="product" name="product" value="{{ filters.product }}" placeholder="singing bowls"></div>
+      <div class="field"><label for="country">Country</label><input id="country" name="country" value="{{ filters.country }}" placeholder="United States"></div>
+      <div class="field"><label for="state">State</label><input id="state" name="state" value="{{ filters.state }}" placeholder="Texas"></div>
+      <div class="field"><label for="city">City</label><input id="city" name="city" value="{{ filters.city }}" placeholder="Houston"></div>
+      <button class="btn" type="submit">Open discovery</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <span class="eyebrow">Workspace health</span>
+    <h2>Connection status</h2>
+    <table>
+      <tbody>
+        <tr><td>Gemini classification</td><td>{% if gemini_configured %}<span class="badge green">Active</span>{% else %}<span class="badge orange">Demo rules</span>{% endif %}</td></tr>
+        <tr><td>Gmail sender</td><td>{% if gmail_state.connected %}<span class="badge green">Connected</span>{% else %}<span class="badge orange">Demo outbox</span>{% endif %}</td></tr>
+        <tr><td>Email validation</td><td>{% if validation_mode == 'mx' %}<span class="badge green">Enhanced check</span>{% else %}<span class="badge">Standard check</span>{% endif %}</td></tr>
+        <tr><td>Saved records</td><td><span class="badge green">{{ stats.total_leads }} lead(s)</span></td></tr>
+      </tbody>
+    </table>
+    <p class="small muted"><a href="{{ url_for('integrations') }}">View connection status →</a></p>
+  </section>
+</div>
+
+<section class="card">
+  <span class="eyebrow">Your workflow</span>
+  <h2>From discovery to outreach</h2>
+  <div class="grid cols-4">
+    <div class="workflow-step"><span class="badge">1</span><h3>Discover</h3><p class="small muted">Research platforms and directories with guided links, then add promising buyers.</p></div>
+    <div class="workflow-step"><span class="badge">2</span><h3>Save lead</h3><p class="small muted">{{ stats.total_leads }} record(s) with buyer, company, email, phone, website and location.</p></div>
+    <div class="workflow-step"><span class="badge">3</span><h3>Validate &amp; classify</h3><p class="small muted">{{ stats.valid_emails }} valid-format email(s), {{ stats.gemini_classified }} AI result(s), {{ stats.demo_classified }} demo-rule result(s).</p></div>
+    <div class="workflow-step"><span class="badge">4</span><h3>Outreach &amp; report</h3><p class="small muted">{{ stats.emails_logged }} email(s) recorded, {{ stats.outreach_ready }} buyer(s) ready for personalized outreach.</p></div>
+  </div>
+</section>
+
+<div class="split">
+  <section class="card">
+    <div class="page-head"><div><span class="eyebrow">Latest activity</span><h2>Recent leads</h2></div><a class="btn secondary small" href="{{ url_for('leads') }}">View all</a></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Contact / company</th><th>Location</th><th>Email</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for lead in recent_leads %}
+          <tr>
+            <td><a href="{{ url_for('lead_detail', lead_id=lead.id) }}">{{ lead.contact_name or '—' }}</a><br><span class="small muted">{{ lead.company_name or 'No company' }}</span></td>
+            <td class="small">{{ [lead.city, lead.state, lead.country] | select | join(', ') }}</td>
+            <td class="small">{{ lead.email or '—' }}</td>
+            <td>
+              {% if lead.email_valid %}<span class="badge green">Valid format</span>{% else %}<span class="badge red">Invalid</span>{% endif %}
+              {% if lead.buyer_type == 'business' %}<span class="badge purple">Business buyer</span>
+              {% elif lead.buyer_type == 'individual' %}<span class="badge orange">Individual buyer</span>
+              {% elif lead.buyer_type == 'uncertain' %}<span class="badge orange">Uncertain</span>{% endif %}
+              {% if lead.is_demo %}<span class="badge gray">Demo</span>{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="table-empty">No leads yet. Add a lead or run a sample discovery.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="eyebrow">Distribution</span>
+    <h2>Lead sources</h2>
+    {% for label, count in sources %}
+      <div class="bar-row"><span title="{{ label }}">{{ label }}</span><div class="bar-track"><div class="bar-fill" style="width: {{ (count / (stats.total_leads or 1) * 100) | round | int }}%"></div></div><strong>{{ count }}</strong></div>
+    {% else %}<p class="muted">No sources recorded yet.</p>{% endfor %}
+    <hr>
+    <h3>Classification</h3>
+    {% for label, count in buyer_types %}
+      <div class="bar-row"><span>{{ label }}</span><div class="bar-track"><div class="bar-fill" style="width: {{ (count / (stats.total_leads or 1) * 100) | round | int }}%"></div></div><strong>{{ count }}</strong></div>
+    {% else %}<p class="muted">No classification results yet.</p>{% endfor %}
+  </section>
+</div>
+
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Manual research playbooks · {{ app_name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Field guide</span>
+    <h1>Manual buyer research playbooks</h1>
+    <p class="muted">Simple, repeatable research steps for finding serious buyers across public platforms and directories.</p>
+  </div>
+  <a class="btn secondary" href="{{ url_for('discovery', **filters) }}">Back to discovery</a>
+</div>
+
+<section class="card">
+  <h2>Choose the research scope</h2>
+  <form class="inline" method="get" action="{{ url_for('playbooks') }}">
+    <div class="field"><label>Product</label><input name="product" value="{{ filters.product }}"></div>
+    <div class="field"><label>Country</label><input name="country" value="{{ filters.country }}"></div>
+    <div class="field"><label>State</label><input name="state" value="{{ filters.state }}"></div>
+    <div class="field"><label>City</label><input name="city" value="{{ filters.city }}"></div>
+    <button class="btn" type="submit">Update links</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Search ladder used in the video</h2>
+  <div class="grid cols-3">
+    {% for step in ladder %}
+      <div class="card tight">
+        <span class="badge">{{ step.label }}</span>
+        <h3 class="step-title">{{ step.scope }}</h3>
+        <p class="small muted">Open the public results for this scope and review each buyer manually.</p>
+        <div class="actions">
+          <a class="btn small" href="{{ step.google_url }}" target="_blank" rel="noopener">Google search</a>
+          <a class="btn secondary small" href="{{ step.maps_url }}" target="_blank" rel="noopener">Google Maps</a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="grid cols-2">
+  {% for playbook in playbooks %}
+    <section class="card">
+      <h2>{{ playbook.title }}</h2>
+      <p class="small muted">Source: {{ playbook.source }}</p>
+      <ol class="steps">
+        {% for step in playbook.steps %}<li>{{ step }}</li>{% endfor %}
+      </ol>
+      <div class="actions">
+        {% for link in playbook.links %}
+          <a class="btn secondary small" href="{{ link.url }}" target="_blank" rel="noopener">{{ link.name }}</a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+</div>
+
+<section class="card">
+  <h2>All source links</h2>
+  <div class="link-list">
+    {% for link in links %}
+      <div class="link-item">
+        <div><strong>{{ link.name }}</strong><span>{{ link.description }}</span></div>
+        <a class="btn secondary small" href="{{ link.url }}" target="_blank" rel="noopener">Open</a>
+      </div>
+    {% endfor %}
+  </div>
+  <p class="small muted">Useful buyer roles: buyer, assistant buyer, purchaser, import manager, CEO, owner, wholesaler, retailer, distributor, wellness store and showroom manager. Adjust the product term to suit the target market.</p>
+</section>
+
+{% endblock %}

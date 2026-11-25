@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ lead.contact_name or lead.company_name or 'Lead' }} · {{ app_name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Buyer record</span>
+    <h1>{{ lead.contact_name or 'Unnamed contact' }}</h1>
+    <p class="muted">{{ lead.company_name or 'No company recorded' }} · {{ [lead.city, lead.state, lead.country] | select | join(', ') }}</p>
+  </div>
+  <a class="btn secondary" href="{{ url_for('leads') }}">Back to leads</a>
+</div>
+
+<div class="grid cols-3">
+  <div class="card stat-card"><div class="stat-value compact">{% if lead.email_valid %}Valid format{% else %}Invalid email{% endif %}</div><div class="stat-label">{{ lead.email_validation_note }}</div></div>
+  <div class="card stat-card">
+    <div class="stat-value compact">
+      {% if lead.buyer_type == 'business' %}Business buyer
+      {% elif lead.buyer_type == 'individual' %}Individual buyer
+      {% elif lead.buyer_type == 'uncertain' %}Uncertain
+      {% else %}Not classified{% endif %}
+    </div>
+    <div class="stat-label">{{ lead.classification_method or 'Awaiting classification' }}</div>
+  </div>
+  <div class="card stat-card"><div class="stat-value compact">{{ history | length }}</div><div class="stat-label">Email history entries</div></div>
+</div>
+
+<div class="split">
+  <section class="card">
+    <span class="eyebrow">Record details</span>
+    <h2>Edit contact record</h2>
+    <form class="stack" method="post" action="{{ url_for('lead_edit', lead_id=lead.id) }}">
+      <div class="grid cols-2">
+        <div><label for="contact_name">Buyer / contact name</label><input id="contact_name" name="contact_name" value="{{ lead.contact_name }}"></div>
+        <div><label for="company_name">Company name</label><input id="company_name" name="company_name" value="{{ lead.company_name }}"></div>
+        <div><label for="email">Email address</label><input id="email" name="email" value="{{ lead.email }}"></div>
+        <div><label for="phone">Contact number</label><input id="phone" name="phone" value="{{ lead.phone }}"></div>
+        <div><label for="website">Website</label><input id="website" name="website" value="{{ lead.website }}"></div>
+        <div><label for="role">Role / title</label><input id="role" name="role" value="{{ lead.role }}"></div>
+        <div><label for="product">Product</label><input id="product" name="product" value="{{ lead.product }}"></div>
+        <div><label for="source">Source</label><input id="source" name="source" value="{{ lead.source }}"></div>
+        <div><label for="country">Country</label><input id="country" name="country" value="{{ lead.country }}"></div>
+        <div><label for="state">State</label><input id="state" name="state" value="{{ lead.state }}"></div>
+        <div><label for="city">City</label><input id="city" name="city" value="{{ lead.city }}"></div>
+      </div>
+      <button class="btn" type="submit">Save changes</button>
+    </form>
+  </section>
+
+  <div>
+    <section class="card">
+      <span class="eyebrow">Buyer insight</span>
+      <h2>Classification</h2>
+      <p>
+        {% if lead.buyer_type == 'business' %}<span class="badge purple">Business buyer</span>
+        {% elif lead.buyer_type == 'individual' %}<span class="badge orange">Individual buyer</span>
+        {% elif lead.buyer_type == 'uncertain' %}<span class="badge orange">Uncertain</span>
+        {% else %}<span class="badge gray">Not classified</span>{% endif %}
+      </p>
+      <table><tbody>
+        <tr><th>Source</th><td class="small">{{ lead.classification_method or 'Not classified yet' }}</td></tr>
+        <tr><th>Reason</th><td class="small">{{ lead.classification_reason or '—' }}</td></tr>
+        <tr><th>Confidence</th><td class="small">{% if lead.classification_confidence is not none %}{{ '%.0f%%'|format(lead.classification_confidence * 100) }}{% else %}—{% endif %}</td></tr>
+        <tr><th>Classified at</th><td class="small">{{ lead.classification_at or '—' }}</td></tr>
+      </tbody></table>
+      <form method="post" action="{{ url_for('lead_classify', lead_id=lead.id) }}" class="actions">
+        <button class="btn small" type="submit" name="force_demo" value="0" {% if not gemini_configured %}disabled title="AI classification is not available"{% endif %}>
+          {% if gemini_configured %}Classify with Gemini{% else %}AI classification unavailable{% endif %}
+        </button>
+        <button class="btn secondary small" type="submit" name="force_demo" value="1">Use demo rules</button>
+      </form>
+      <p class="small muted">Results and their source are saved with this lead and remain after restart. Demo-rule results are never shown as AI results.</p>
+    </section>
+
+    <section class="card">
+      <span class="eyebrow">Record information</span>
+      <h2>Lead metadata</h2>
+      <table><tbody>
+        <tr><th>Source link</th><td class="small">{% if lead.source_url %}<a href="{{ lead.source_url }}" target="_blank" rel="noopener">Open source</a>{% else %}Not recorded{% endif %}</td></tr>
+        <tr><th>Added</th><td class="small">{{ lead.created_at }}</td></tr>
+        <tr><th>Last contacted</th><td class="small">{{ lead.last_contacted_at or 'Never' }}</td></tr>
+        <tr><th>Record type</th><td>{% if lead.is_demo %}<span class="badge orange">Demo lead</span>{% else %}<span class="badge green">Real entry</span>{% endif %}</td></tr>
+      </tbody></table>
+      <form method="post" action="{{ url_for('lead_delete', lead_id=lead.id) }}" onsubmit="return confirm('Delete this lead?')">
+        <button class="btn danger small" type="submit">Delete lead</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <span class="eyebrow">Contact trail</span>
+      <h2>Email history</h2>
+      {% for item in history %}
+        <div class="card tight">
+          <strong>{{ item.subject }}</strong>
+          <div class="small muted">{{ item.sent_at }} · {{ item.provider }}</div>
+          <span class="badge {{ 'green' if item.status == 'sent' else 'orange' }}">{{ item.status }}</span>
+          {% if item.error %}<p class="small">{{ item.error }}</p>{% endif %}
+          {% if item.attachment_name %}<p class="small">Attachment: {{ item.attachment_name }}</p>{% endif %}
+        </div>
+      {% else %}
+        <p class="muted">No email sent to this buyer yet.</p>
+      {% endfor %}
+    </section>
+  </div>
+</div>
+
+{% endblock %}

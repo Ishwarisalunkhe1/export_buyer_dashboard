@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Leads · {{ app_name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Buyer records</span>
+    <h1>Lead database</h1>
+    <p class="muted">Review, validate and classify buyers in one place. Duplicate emails, websites and companies in the same location are skipped.</p>
+  </div>
+  <a class="btn secondary" href="{{ url_for('reports_csv', **filters) }}">Export CSV</a>
+</div>
+
+<div class="grid cols-2">
+  <section class="card">
+    <h2>Add one lead</h2>
+    <form class="stack" method="post" action="{{ url_for('lead_add') }}">
+      <div class="grid cols-2">
+        <div><label for="contact_name">Buyer / contact name</label><input id="contact_name" name="contact_name"></div>
+        <div><label for="company_name">Company name</label><input id="company_name" name="company_name"></div>
+        <div><label for="email">Email address</label><input id="email" name="email" type="email"></div>
+        <div><label for="phone">Contact number</label><input id="phone" name="phone"></div>
+        <div><label for="website">Website</label><input id="website" name="website"></div>
+        <div><label for="role">Role / title</label><input id="role" name="role" placeholder="buyer, importer, owner"></div>
+        <div><label for="product">Product</label><input id="product" name="product" value="singing bowls"></div>
+        <div><label for="source">Source</label><input id="source" name="source" placeholder="Google Maps"></div>
+        <div><label for="country">Country</label><input id="country" name="country" value="United States"></div>
+        <div><label for="state">State</label><input id="state" name="state" value="Texas"></div>
+        <div><label for="city">City</label><input id="city" name="city" value="Houston"></div>
+      </div>
+      <button class="btn" type="submit">Add lead</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Upload lead file</h2>
+    <p class="small muted">CSV or XLSX columns such as buyer name, company, email, contact number, website, product, country, state, city, source and role are mapped automatically.</p>
+    <form class="stack" method="post" action="{{ url_for('lead_import') }}" enctype="multipart/form-data">
+      <div><label for="lead_file">Lead file (.csv or .xlsx)</label><input id="lead_file" name="lead_file" type="file" accept=".csv,.xlsx,.xlsm" required></div>
+      <div class="grid cols-2">
+        <div><label for="i-product">Default product</label><input id="i-product" name="product" value="singing bowls"></div>
+        <div><label for="i-source">Default source</label><input id="i-source" name="source" value="File upload"></div>
+        <div><label for="i-country">Default country</label><input id="i-country" name="country" value="United States"></div>
+        <div><label for="i-state">Default state</label><input id="i-state" name="state"></div>
+      </div>
+      <button class="btn" type="submit">Import and de-duplicate</button>
+    </form>
+    <p class="small muted">Workspace: {{ stats.total_leads }} leads · {{ stats.valid_emails }} valid-format emails · {{ stats.duplicates_skipped }} duplicates previously skipped.</p>
+  </section>
+</div>
+
+<section class="card">
+  <span class="eyebrow">Refine the list</span>
+  <h2>Filter leads</h2>
+  <form class="inline" method="get" action="{{ url_for('leads') }}">
+    <div class="field"><label for="q">Search</label><input id="q" name="q" value="{{ filters.q }}" placeholder="name, company, email, city"></div>
+    <div class="field narrow"><label for="product">Product</label><input id="product" name="product" value="{{ filters.product }}" list="product-options"></div>
+    <div class="field narrow"><label for="country">Country</label><input id="country" name="country" value="{{ filters.country }}" list="country-options"></div>
+    <div class="field narrow"><label for="state">State</label><input id="state" name="state" value="{{ filters.state }}" list="state-options"></div>
+    <div class="field narrow"><label for="city">City</label><input id="city" name="city" value="{{ filters.city }}" list="city-options"></div>
+    <div class="field narrow"><label for="source">Source</label><input id="source" name="source" value="{{ filters.source }}" list="source-options"></div>
+    <div class="field narrow"><label for="buyer_type">Classification</label>
+      <select id="buyer_type" name="buyer_type">
+        <option value="">All</option>
+        {% for option in ['business', 'individual', 'uncertain', 'unclassified'] %}
+          <option value="{{ option }}" {% if filters.buyer_type == option %}selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field narrow"><label for="validation">Email</label>
+      <select id="validation" name="validation">
+        <option value="">All</option>
+        <option value="valid" {% if filters.validation == 'valid' %}selected{% endif %}>Valid format</option>
+        <option value="invalid" {% if filters.validation == 'invalid' %}selected{% endif %}>Invalid</option>
+      </select>
+    </div>
+    <button class="btn" type="submit">Apply</button>
+    <a class="btn secondary" href="{{ url_for('leads') }}">Clear</a>
+  </form>
+  <datalist id="product-options">{% for value in products %}<option value="{{ value }}">{% endfor %}</datalist>
+  <datalist id="country-options">{% for value in countries %}<option value="{{ value }}">{% endfor %}</datalist>
+  <datalist id="state-options">{% for value in states %}<option value="{{ value }}">{% endfor %}</datalist>
+  <datalist id="city-options">{% for value in cities %}<option value="{{ value }}">{% endfor %}</datalist>
+  <datalist id="source-options">{% for value in sources %}<option value="{{ value }}">{% endfor %}</datalist>
+</section>
+
+<section class="card">
+  <div class="page-head">
+    <div><span class="eyebrow">Review queue</span><h2>Contact records <span class="badge gray">{{ leads | length }}</span></h2></div>
+    {% if validation_mode == 'mx' %}<span class="badge green">Enhanced email check</span>{% else %}<span class="badge">Standard email check</span>{% endif %}
+  </div>
+  <form method="post" action="{{ url_for('lead_bulk') }}" id="bulk-form">
+    <div class="actions bulk-actions">
+      <button class="btn secondary small" type="submit" name="action" value="validate">Validate selected emails</button>
+      <button class="btn secondary small" type="submit" name="action" value="classify">Classify selected buyers</button>
+      <button class="btn small" type="submit" name="action" value="outreach">Prepare outreach</button>
+      <button class="btn danger small" type="submit" name="action" value="delete" onclick="return confirm('Delete selected leads?')">Delete selected</button>
+      <div class="checkbox">
+        <input type="checkbox" id="force_demo" name="force_demo" value="1">
+        <label for="force_demo">Use demo rules</label>
+      </div>
+      <span class="small muted">{% if gemini_configured %}AI classification available{% else %}Demo rules active{% endif %}</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="check"><input type="checkbox" id="select-all" aria-label="Select all"></th>
+            <th>Buyer / company</th><th>Email</th><th>Phone</th><th>Website</th>
+            <th>Location</th><th>Source</th><th>Email status</th><th>Buyer type</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lead in leads %}
+          <tr>
+            <td class="check"><input type="checkbox" name="lead_ids" value="{{ lead.id }}"></td>
+            <td><a href="{{ url_for('lead_detail', lead_id=lead.id) }}">{{ lead.contact_name or '—' }}</a><br><span class="small muted">{{ lead.company_name or 'No company' }}</span>{% if lead.role %}<br><span class="small">{{ lead.role }}</span>{% endif %}</td>
+            <td class="small">{{ lead.email or '—' }}<br><span class="small muted">{{ lead.email_validation_note }}</span></td>
+            <td class="small">{{ lead.phone or '—' }}</td>
+            <td class="small">{% if lead.website %}<a href="{{ lead.website }}" target="_blank" rel="noopener">{{ lead.website }}</a>{% else %}—{% endif %}</td>
+            <td class="small">{{ [lead.city, lead.state, lead.country] | select | join(', ') }}</td>
+            <td class="small">{{ lead.source or '—' }}{% if lead.is_demo %}<br><span class="badge gray">Demo</span>{% endif %}</td>
+            <td>{% if lead.email_valid %}<span class="badge green">Valid</span>{% else %}<span class="badge red">Invalid</span>{% endif %}</td>
+            <td>
+              {% if lead.buyer_type == 'business' %}<span class="badge purple">Business buyer</span>
+              {% elif lead.buyer_type == 'individual' %}<span class="badge orange">Individual buyer</span>
+              {% elif lead.buyer_type == 'uncertain' %}<span class="badge orange">Uncertain</span>
+              {% else %}<span class="badge gray">Not classified</span>{% endif %}
+              {% if lead.classification_method %}<br><span class="small muted" title="{{ lead.classification_reason }}">{{ lead.classification_method }}{% if lead.classification_confidence is not none %} · {{ '%.0f%%'|format(lead.classification_confidence * 100) }}{% endif %}</span>{% endif %}
+            </td>
+            <td><a class="btn secondary small" href="{{ url_for('lead_detail', lead_id=lead.id) }}">Open</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="10" class="table-empty">No leads match these filters.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
+</section>
+
+<script>
+  document.getElementById('select-all').addEventListener('change', function (event) {
+    document.querySelectorAll('input[name="lead_ids"]').forEach(function (checkbox) {
+      checkbox.checked = event.target.checked;
+    });
+  });
+</script>
+
+{% endblock %}

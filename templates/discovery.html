@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Buyer discovery · {{ app_name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Market research</span>
+    <h1>Buyer discovery</h1>
+    <p class="muted">Focus on one product category at a time and narrow each market carefully. Start broad, then work down to a city and individual showrooms.</p>
+  </div>
+  <a class="btn secondary" href="{{ url_for('playbooks', **filters) }}">Manual research playbooks</a>
+</div>
+
+<section class="card">
+  <span class="eyebrow">Set your scope</span>
+  <h2>Search filters</h2>
+  <form class="inline" method="get" action="{{ url_for('discovery') }}">
+    <div class="field"><label for="product">Product</label><input id="product" name="product" value="{{ filters.product }}"></div>
+    <div class="field"><label for="country">Country</label><input id="country" name="country" value="{{ filters.country }}"></div>
+    <div class="field"><label for="state">State</label><input id="state" name="state" value="{{ filters.state }}"></div>
+    <div class="field"><label for="city">City</label><input id="city" name="city" value="{{ filters.city }}"></div>
+    <button class="btn" type="submit">Build search links</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Narrow the search: country → state → city</h2>
+  <p class="small muted">The video explains that a country such as the US is too broad. Go to a state, then a city, then open individual showrooms.</p>
+  <div class="grid cols-3">
+    {% for step in ladder %}
+      <div class="card tight">
+        <span class="badge">{{ step.label }}</span>
+        <h3 class="step-title">{{ step.scope }}</h3>
+        <p class="small muted">Review public results for this market scope.</p>
+        <div class="actions">
+          <a class="btn small" href="{{ step.google_url }}" target="_blank" rel="noopener">Google</a>
+          <a class="btn secondary small" href="{{ step.maps_url }}" target="_blank" rel="noopener">Maps</a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="split">
+  <section class="card">
+    <h2>Manual search links</h2>
+    <p class="small muted">These links open the public platforms named in the video with your product and location terms. They are research shortcuts, not scraped data.</p>
+    <div class="link-list">
+      {% for link in links %}
+        <div class="link-item">
+          <div>
+            <strong>{{ link.name }}</strong>
+            <span>{{ link.description }}</span>
+            <div class="small muted">{{ link.category }}</div>
+          </div>
+          <a class="btn secondary small" href="{{ link.url }}" target="_blank" rel="noopener">Open search</a>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div>
+    <section class="card">
+      <h2>Demo discovery run</h2>
+      <div class="notice demo">
+        <strong>Labelled prototype:</strong> uses {{ demo_candidate_count }} fictional sample prospects and applies real duplicate checks. It does not call live search APIs or scrape platforms.
+      </div>
+      <form class="stack" method="post" action="{{ url_for('discovery_run') }}">
+        <input type="hidden" name="product" value="{{ filters.product }}">
+        <input type="hidden" name="country" value="{{ filters.country }}">
+        <input type="hidden" name="state" value="{{ filters.state }}">
+        <input type="hidden" name="city" value="{{ filters.city }}">
+        <fieldset>
+          <legend><strong>Sources to simulate</strong></legend>
+          {% for source in sources %}
+            <div class="checkbox">
+              <input type="checkbox" id="src-{{ source.key }}" name="sources" value="{{ source.key }}" checked>
+              <label for="src-{{ source.key }}">{{ source.name }}</label>
+            </div>
+          {% endfor %}
+        </fieldset>
+        <button class="btn" type="submit">Run demo discovery</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Playbook summary</h2>
+      {% for playbook in playbooks %}
+        <h3>{{ playbook.title }}</h3>
+        <p class="small muted">{{ playbook.source }}</p>
+      {% endfor %}
+      <a class="btn ghost small" href="{{ url_for('playbooks', **filters) }}">Read full manual methods</a>
+    </section>
+  </div>
+</div>
+
+{% endblock %}

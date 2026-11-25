@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Reports · {{ app_name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Performance view</span>
+    <h1>Dashboard reporting</h1>
+    <p class="muted">Review lead sources, target markets, classification quality and outreach activity at a glance.</p>
+  </div>
+  <a class="btn secondary" href="{{ url_for('reports_csv') }}">Download leads CSV</a>
+</div>
+
+<div class="grid cols-4">
+  <div class="card stat-card"><div class="stat-value">{{ stats.total_leads }}</div><div class="stat-label">Total leads</div></div>
+  <div class="card stat-card"><div class="stat-value">{{ stats.outreach_ready }}</div><div class="stat-label">Outreach-ready buyers</div></div>
+  <div class="card stat-card"><div class="stat-value">{{ stats.invalid_emails }}</div><div class="stat-label">Invalid emails filtered out</div></div>
+  <div class="card stat-card"><div class="stat-value">{{ stats.emails_logged }}</div><div class="stat-label">Emails logged</div></div>
+</div>
+
+<div class="grid cols-3">
+  <section class="card">
+    <h2>Lead sources</h2>
+    {% for label, count in sources %}<div class="bar-row"><span title="{{ label }}">{{ label }}</span><div class="bar-track"><div class="bar-fill" style="width: {{ (count / (stats.total_leads or 1) * 100) | round | int }}%"></div></div><strong>{{ count }}</strong></div>{% else %}<p class="muted">No data.</p>{% endfor %}
+  </section>
+  <section class="card">
+    <h2>Target countries</h2>
+    {% for label, count in countries %}<div class="bar-row"><span title="{{ label }}">{{ label }}</span><div class="bar-track"><div class="bar-fill" style="width: {{ (count / (stats.total_leads or 1) * 100) | round | int }}%"></div></div><strong>{{ count }}</strong></div>{% else %}<p class="muted">No data.</p>{% endfor %}
+  </section>
+  <section class="card">
+    <h2>States</h2>
+    {% for label, count in states %}<div class="bar-row"><span title="{{ label }}">{{ label }}</span><div class="bar-track"><div class="bar-fill" style="width: {{ (count / (stats.total_leads or 1) * 100) | round | int }}%"></div></div><strong>{{ count }}</strong></div>{% else %}<p class="muted">No data.</p>{% endfor %}
+  </section>
+</div>
+
+<div class="grid cols-2">
+  <section class="card">
+    <h2>Buyer classification</h2>
+    {% for label, count in buyers %}<div class="bar-row"><span>{{ label }}</span><div class="bar-track"><div class="bar-fill" style="width: {{ (count / (stats.total_leads or 1) * 100) | round | int }}%"></div></div><strong>{{ count }}</strong></div>{% else %}<p class="muted">No data.</p>{% endfor %}
+    <h3 class="section-gap">Classification sources</h3>
+    {% for label, count in classification_sources %}<div class="bar-row"><span title="{{ label }}">{{ label }}</span><div class="bar-track"><div class="bar-fill" style="width: {{ (count / (stats.total_leads or 1) * 100) | round | int }}%"></div></div><strong>{{ count }}</strong></div>{% else %}<p class="muted">No classification results yet.</p>{% endfor %}
+    <h3 class="section-gap">Email status</h3>
+    {% for label, count in statuses %}<div class="bar-row"><span>{{ label }}</span><div class="bar-track"><div class="bar-fill" style="width: {{ (count / (stats.emails_logged or 1) * 100) | round | int }}%"></div></div><strong>{{ count }}</strong></div>{% else %}<p class="muted">No outreach recorded.</p>{% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Data quality summary</h2>
+    <table><tbody>
+      <tr><th>Valid-format emails</th><td>{{ stats.valid_emails }}</td></tr>
+      <tr><th>Invalid emails</th><td>{{ stats.invalid_emails }}</td></tr>
+      <tr><th>Business buyers</th><td>{{ stats.business_buyers }}</td></tr>
+      <tr><th>Individual buyers</th><td>{{ stats.individual_buyers }}</td></tr>
+      <tr><th>Uncertain buyers</th><td>{{ stats.uncertain_buyers }}</td></tr>
+      <tr><th>Unclassified leads</th><td>{{ stats.unclassified }}</td></tr>
+      <tr><th>Gemini results</th><td>{{ stats.gemini_classified }}</td></tr>
+      <tr><th>Demo-rule results</th><td>{{ stats.demo_classified }}</td></tr>
+      <tr><th>Duplicate entries skipped</th><td>{{ stats.duplicates_skipped }}</td></tr>
+      <tr><th>Demo leads</th><td>{{ stats.demo_leads }}</td></tr>
+    </tbody></table>
+  </section>
+</div>
+
+<div class="grid cols-2">
+  <section class="card">
+    <h2>Recent lead file imports</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>File</th><th>Rows</th><th>Added</th><th>Duplicates</th><th>Invalid</th><th>At</th></tr></thead>
+      <tbody>
+        {% for batch in import_batches %}<tr><td class="small">{{ batch.filename }}</td><td>{{ batch.total_rows }}</td><td>{{ batch.inserted }}</td><td>{{ batch.duplicates }}</td><td>{{ batch.invalid }}</td><td class="small">{{ batch.created_at }}</td></tr>
+        {% else %}<tr><td colspan="6" class="table-empty">No imports yet.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="card">
+    <h2>Recent discovery runs</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Product / location</th><th>Found</th><th>Added</th><th>Duplicates</th><th>At</th></tr></thead>
+      <tbody>
+        {% for run in discovery_runs %}<tr><td class="small">{{ run.product }}<br><span class="muted">{{ [run.city, run.state, run.country] | select | join(', ') }}</span></td><td>{{ run.found }}</td><td>{{ run.inserted }}</td><td>{{ run.duplicates }}</td><td class="small">{{ run.created_at }}</td></tr>
+        {% else %}<tr><td colspan="5" class="table-empty">No discovery runs yet.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+</div>
+
+{% endblock %}

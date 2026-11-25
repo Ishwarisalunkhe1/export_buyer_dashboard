@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Email history · {{ app_name }}{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Contact trail</span>
+    <h1>Email history</h1>
+    <p class="muted">Every outreach attempt is recorded so the team can track contacts and avoid repeat messages.</p>
+  </div>
+  <a class="btn" href="{{ url_for('outreach') }}">Compose outreach</a>
+</div>
+
+<section class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Sent at</th><th>Buyer</th><th>Subject</th><th>Delivery</th><th>Status</th><th>Attachment</th><th>Note</th><th>Lead</th></tr></thead>
+      <tbody>
+        {% for item in history %}
+        <tr>
+          <td class="small nowrap">{{ item.sent_at }}</td>
+          <td><strong>{{ item.lead_name }}</strong><br><span class="small muted">{{ item.lead_email }}</span></td>
+          <td class="small">{{ item.subject }}</td>
+          <td class="small">{{ item.provider }}</td>
+          <td>
+            {% if item.status == 'sent' %}<span class="badge green">Sent</span>
+            {% elif item.status == 'demo_sent' %}<span class="badge orange">Demo sent</span>
+            {% else %}<span class="badge red">Failed</span>{% endif %}
+          </td>
+          <td class="small">{{ item.attachment_name or '—' }}</td>
+          <td class="small">{{ item.error or '—' }}</td>
+          <td class="small"><a href="{{ url_for('lead_detail', lead_id=item.lead_id) }}">Lead</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="table-empty">No email history yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% endblock %}
